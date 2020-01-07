@@ -25,6 +25,11 @@ public class ZookeeperClientTest {
 
         Thread.sleep(1000);
 
+        //创建节点的API
+        String dataStr = new String("111");
+        clinet.create("/testNode",dataStr.getBytes(),ZooDefs.Ids.OPEN_ACL_UNSAFE,CreateMode.EPHEMERAL_SEQUENTIAL);
+
+
         Stat stat = new Stat();
 
 //        ************************************************************
