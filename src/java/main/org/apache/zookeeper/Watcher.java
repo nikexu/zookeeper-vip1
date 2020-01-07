@@ -119,10 +119,15 @@ public interface Watcher {
          */
         @InterfaceAudience.Public
         public enum EventType {
+            //在连接的时候就是没有类型
             None (-1),
+            //节点创建（子节点的创建）
             NodeCreated (1),
+            //节点删除，自己本身的删除
             NodeDeleted (2),
+            //自己节点的数据的改变
             NodeDataChanged (3),
+            //自己子节点数据的改变
             NodeChildrenChanged (4);
 
             private final int intValue;     // Integer representation of value
