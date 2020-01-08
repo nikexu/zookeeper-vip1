@@ -662,6 +662,7 @@ public class ClientCnxn {
             // 操作同步通知
             synchronized (p) {
                 p.finished = true;
+                /** supreme 非常重要 唤醒原先 阻塞等待服务器的返回结果的线程**/
                 p.notifyAll();
             }
         } else {
@@ -854,6 +855,7 @@ public class ClientCnxn {
                 if (replyHdr.getZxid() > 0) {
                     lastZxid = replyHdr.getZxid();
                 }
+                /**把服务端响应的数据放进packet里面**/
                 if (packet.response != null && replyHdr.getErr() == 0) {
                     packet.response.deserialize(bbia, "response");
                 }
@@ -900,6 +902,7 @@ public class ClientCnxn {
                      + ", initiating session");
             isFirstConnect = false;
             long sessId = (seenRwServerBefore) ? sessionId : 0;
+            //创建连接的请求对象
             ConnectRequest conReq = new ConnectRequest(0, lastZxid,
                     sessionTimeout, sessId, sessionPasswd);
             synchronized (outgoingQueue) {
@@ -1066,7 +1069,10 @@ public class ClientCnxn {
             long lastPingRwServer = Time.currentElapsedTime();
             final int MAX_SEND_PING_INTERVAL = 10000; //10 seconds
             InetSocketAddress serverAddress = null;
-            /**8.state 代表socket 是否连接（不等于已关闭 CLOSED/不等于验证失败 AUTH_FAILED）**/
+            /**
+             * 8.state 代表socket 是否连接（不等于已关闭 CLOSED/不等于验证失败 AUTH_FAILED）
+             * 这个while + try的结构保证了 如果有个服务端session超时了，可以再去重试一下另外的服务端
+             **/
             while (state.isAlive()) {
                 try {
                     /**9.如果socket没有连接 就要去尝试去连接 **/
@@ -1129,9 +1135,10 @@ public class ClientCnxn {
                                       authState,null));
                             }
                         }
-                        // 如果连接成功，看是否超过了readTime
+                        /** 如果连接成功，看是否超过了readTime **/
                         to = readTimeout - clientCnxnSocket.getIdleRecv();
                     } else {
+                        /** 没有连接成功的情况，看是否超过了readTime **/
                         to = connectTimeout - clientCnxnSocket.getIdleRecv();
                     }
 
@@ -1144,11 +1151,12 @@ public class ClientCnxn {
                             + " for sessionid 0x"
                             + Long.toHexString(sessionId);
                         LOG.warn(warnInfo);
+                        //抛出超时的异常信息
                         throw new SessionTimeoutException(warnInfo);
                     }
                     if (state.isConnected()) {
-                        // 如果连接成功，就不断了ping
 
+                        /** 如果连接成功，就不断的去ping服务器发送心跳 **/
                     	//1000(1 second) is to prevent race condition missing to send the second ping
                     	//also make sure not to send too many pings when readTimeout is small 
                         int timeToNextPing = readTimeout / 2 - clientCnxnSocket.getIdleSend() - 
@@ -1182,7 +1190,7 @@ public class ClientCnxn {
                         to = Math.min(to, pingRwTimeout - idlePingRwServer);
                     }
 
-                    // 进行传输，传输的是outgoingQueue队列中的Packet
+                    /** 进行传输，传输的是outgoingQueue队列中的Packet  进入方法内**/
                     clientCnxnSocket.doTransport(to, pendingQueue, outgoingQueue, ClientCnxn.this);
                 } catch (Throwable e) {
                     if (closing) {
@@ -1349,7 +1357,10 @@ public class ClientCnxn {
                     + (isRO ? " (READ-ONLY mode)" : ""));
             KeeperState eventState = (isRO) ?
                     KeeperState.ConnectedReadOnly : KeeperState.SyncConnected;
-            // EventType.Node有什么用，估计要看waitingEvents队列的消费者
+            /**
+             * EventType.Node有什么用，估计要看waitingEvents队列的消费者
+             * supreme 如果连接成功了，那么就要创建一个 客户端自己的 Watched事件去监听这个连接成功的 EventType.None 的事件
+             */
             eventThread.queueEvent(new WatchedEvent(
                     Watcher.Event.EventType.None,
                     eventState, null));
@@ -1454,6 +1465,7 @@ public class ClientCnxn {
         /**
          * 将信息发送给服务端后 阻塞住等待服务端返回消息给我
          * 这里就是一个阻塞方法   packet.wait();
+         * supreme 非常重要
          * */
         synchronized (packet) {
             while (!packet.finished) {

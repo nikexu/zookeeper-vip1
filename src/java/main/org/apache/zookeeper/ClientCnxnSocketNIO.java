@@ -57,6 +57,8 @@ public class ClientCnxnSocketNIO extends ClientCnxnSocket {
      * @return true if a packet was received
      * @throws InterruptedException
      * @throws IOException
+     * supreme 传输数据的方法
+     * 从 outgoingQueue 里面去取数据
      */
     void doIO(List<Packet> pendingQueue, LinkedList<Packet> outgoingQueue, ClientCnxn cnxn)
       throws InterruptedException, IOException {
@@ -64,7 +66,8 @@ public class ClientCnxnSocketNIO extends ClientCnxnSocket {
         if (sock == null) {
             throw new IOException("Socket is null!");
         }
-        if (sockKey.isReadable()) { // 可以读了
+        // 读事件就绪
+        if (sockKey.isReadable()) {
             int rc = sock.read(incomingBuffer);
             if (rc < 0) { //如果<0,表示读到末尾了,这种情况出现在连接关闭的时候
                 throw new EndOfStreamException(
@@ -78,7 +81,7 @@ public class ClientCnxnSocketNIO extends ClientCnxnSocket {
                     recvCount++;
                     readLength();
                 } else if (!initialized) { // 如果client和server的连接还没有初始化
-                    readConnectResult(); //读取connect 回复
+                    readConnectResult(); //读取connect 连接请求的结果
                     enableRead();
                     if (findSendablePacket(outgoingQueue,
                             cnxn.sendThread.clientTunneledAuthenticationInProgress()) != null) {
@@ -90,7 +93,11 @@ public class ClientCnxnSocketNIO extends ClientCnxnSocket {
                     incomingBuffer = lenBuffer;
                     updateLastHeard();
                     initialized = true;
-                } else { //如果已连接，并且已经给incomingBuffer分配了对应len的空间
+                } else {
+                    /**
+                     * 如果已连接，并且已经给incomingBuffer分配了对应len的空间
+                     * 进入方法内   是对响应的处理
+                     */
                     sendThread.readResponse(incomingBuffer);
                     lenBuffer.clear();
                     incomingBuffer = lenBuffer;
@@ -98,9 +105,10 @@ public class ClientCnxnSocketNIO extends ClientCnxnSocket {
                 }
             }
         }
+        //写就绪事件
         if (sockKey.isWritable()) {
             synchronized(outgoingQueue) {
-                // 找到可以发送的Packet
+                /** 找到可以发送的Packet，从outgoingQueue里面去取数据 **/
                 Packet p = findSendablePacket(outgoingQueue,
                         cnxn.sendThread.clientTunneledAuthenticationInProgress());
 
@@ -116,6 +124,7 @@ public class ClientCnxnSocketNIO extends ClientCnxnSocket {
                         }
                         p.createBB();
                     }
+                    //socket 使用ByteBuffer写数据
                     sock.write(p.bb);
                     if (!p.bb.hasRemaining()) {  // 没有剩下的了
                         sentCount++;
@@ -163,6 +172,7 @@ public class ClientCnxnSocketNIO extends ClientCnxnSocket {
             }
             if (outgoingQueue.getFirst().bb != null // If we've already starting sending the first packet, we better finish
                 || !clientTunneledAuthenticationInProgress) {
+                /**取出linkedList的第一条数据 **/
                 return outgoingQueue.getFirst();
             }
 
@@ -351,8 +361,11 @@ public class ClientCnxnSocketNIO extends ClientCnxnSocket {
         selector.wakeup();
     }
 
-    // outgoingQueue 是请求发送队列，是client存储需要被发送到server端的Packet队列
-    // pendingQueue是已经从client发送，但是要等待server响应的packet队列
+
+    /**
+     * outgoingQueue 是请求发送队列，是client存储需要被发送到server端的Packet队列
+     * pendingQueue是已经从client发送，但是要等待server响应的packet队列
+     */
     @Override
     void doTransport(int waitTimeOut, List<Packet> pendingQueue, LinkedList<Packet> outgoingQueue,
                      ClientCnxn cnxn)
@@ -370,10 +383,13 @@ public class ClientCnxnSocketNIO extends ClientCnxnSocket {
             SocketChannel sc = ((SocketChannel) k.channel());
             // 如果是连接就绪，调用sendThread连接操作
             if ((k.readyOps() & SelectionKey.OP_CONNECT) != 0) { // 如果就绪的是connect事件，这个出现在registerAndConnect函数没有立即连接成功
+                /** NIO是基于异步的一个连接  如果服务端已经处理完了连接事件，那么这边就会为true 就会进入if里面 **/
                 if (sc.finishConnect()) {
                     updateLastSendAndHeard();
+                    /**进入方法内  建立连接的核心方法**/
                     sendThread.primeConnection();
                 }
+            //如果已经连接成功了，就可以做去做读写事件的监听了
             } else if ((k.readyOps() & (SelectionKey.OP_READ | SelectionKey.OP_WRITE)) != 0) { // 如果就绪的是读或者写事件
                 // 若读写就绪，调用doIO函数
                 doIO(pendingQueue, outgoingQueue, cnxn);
