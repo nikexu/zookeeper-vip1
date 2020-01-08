@@ -389,6 +389,7 @@ public class ClientCnxn {
     public ClientCnxn(String chrootPath, HostProvider hostProvider, int sessionTimeout, ZooKeeper zooKeeper,
             ClientWatchManager watcher, ClientCnxnSocket clientCnxnSocket,
             long sessionId, byte[] sessionPasswd, boolean canBeReadOnly) {
+        //supreme 初始化 zk 属性
         this.zooKeeper = zooKeeper;
         this.watcher = watcher;
         this.sessionId = sessionId;
@@ -396,8 +397,9 @@ public class ClientCnxn {
         this.sessionTimeout = sessionTimeout;
         this.hostProvider = hostProvider;
         this.chrootPath = chrootPath;
-
+        //连接超时时间
         connectTimeout = sessionTimeout / hostProvider.size();
+        //读取的超时时间
         readTimeout = sessionTimeout * 2 / 3;
         readOnly = canBeReadOnly;
 
@@ -421,6 +423,7 @@ public class ClientCnxn {
         disableAutoWatchReset = b;
     }
     public void start() {
+        /**6.起订线程调用run方法**/
         sendThread.start();
         eventThread.start();
     }
@@ -1009,6 +1012,7 @@ public class ClientCnxn {
         private void startConnect(InetSocketAddress addr) throws IOException {
             // initializing it for new connection
             saslLoginFailed = false;
+            /**12.AIM 将状态修改为连接中 **/
             state = States.CONNECTING;
 
             setName(getName().replaceAll("\\(.*\\)",
@@ -1033,8 +1037,8 @@ public class ClientCnxn {
                     saslLoginFailed = true;
                 }
             }
-            logStartConnect(addr);
-
+            logStartConnect(addr);//打印日志
+            /**13. 通过NIO的clientCnxnSocket实现类去建立socket连接**/
             clientCnxnSocket.connect(addr);
         }
 
@@ -1048,7 +1052,11 @@ public class ClientCnxn {
 
         private static final String RETRY_CONN_MSG =
             ", closing socket connection and attempting reconnect";
-        
+
+
+        /**
+         * 7. 这是SendThread 的run方法
+         */
         @Override
         public void run() {
             clientCnxnSocket.introduce(this,sessionId);
@@ -1058,8 +1066,10 @@ public class ClientCnxn {
             long lastPingRwServer = Time.currentElapsedTime();
             final int MAX_SEND_PING_INTERVAL = 10000; //10 seconds
             InetSocketAddress serverAddress = null;
+            /**8.state 代表socket 是否连接（不等于已关闭 CLOSED/不等于验证失败 AUTH_FAILED）**/
             while (state.isAlive()) {
                 try {
+                    /**9.如果socket没有连接 就要去尝试去连接 **/
                     if (!clientCnxnSocket.isConnected()) {
                         // 不是第一次连接，就随机等待...，重试，随机出时间进行重试
                         if(!isFirstConnect){
@@ -1079,11 +1089,11 @@ public class ClientCnxn {
                             serverAddress = rwServerAddress;
                             rwServerAddress = null;
                         } else {
-                            // 取下一个地址
+                            /**10.获取初始化时候的下一个地址 **/
                             serverAddress = hostProvider.next(1000);
                         }
-                        // 建立连接，socket建立成功后会调用SendThread.primeConnection()
-                        startConnect(serverAddress);
+                        /**11.建立连接，socket建立成功后会调用SendThread.primeConnection() 进入方法内**/
+                        startConnect(serverAddress);//进行socket连接
                         clientCnxnSocket.updateLastSendAndHeard();
                     }
 
@@ -1438,8 +1448,13 @@ public class ClientCnxn {
             Record response, WatchRegistration watchRegistration)
             throws InterruptedException {
         ReplyHeader r = new ReplyHeader();
+        /**什么时候去取出outgoingQueue集合内的数据？？   进入方法内**/
         Packet packet = queuePacket(h, r, request, response, null, null, null,
                     null, watchRegistration);
+        /**
+         * 将信息发送给服务端后 阻塞住等待服务端返回消息给我
+         * 这里就是一个阻塞方法   packet.wait();
+         * */
         synchronized (packet) {
             while (!packet.finished) {
                 packet.wait();
@@ -1479,6 +1494,7 @@ public class ClientCnxn {
         // generated later at send-time, by an implementation of ClientCnxnSocket::doIO(),
         // where the packet is actually sent.
         synchronized (outgoingQueue) {
+            //supreme 将request,header 之列的数据打包称成一个 packet，并且加入到 outgoingQueue 队列（是一个有顺序的LinkedList）中去
             packet = new Packet(h, r, request, response, watchRegistration);
             packet.cb = cb;
             packet.ctx = ctx;

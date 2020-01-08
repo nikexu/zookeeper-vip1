@@ -272,6 +272,8 @@ public class ClientCnxnSocketNIO extends ClientCnxnSocket {
      * @param sock the {@link SocketChannel} 
      * @param addr the address of remote host
      * @throws IOException
+     *
+     * supreme 使用NIO建立连接的地方法
      */
     void registerAndConnect(SocketChannel sock, InetSocketAddress addr) 
     throws IOException {
@@ -287,7 +289,7 @@ public class ClientCnxnSocketNIO extends ClientCnxnSocket {
     
     @Override
     void connect(InetSocketAddress addr) throws IOException {
-        // 建立socket
+        // 创建socket
         SocketChannel sock = createSock();
         try {
             // 注册这个sock到服务端

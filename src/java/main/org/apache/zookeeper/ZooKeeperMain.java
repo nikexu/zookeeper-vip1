@@ -279,6 +279,7 @@ public class ZooKeeperMain {
         }
         host = newHost;
         boolean readOnly = cl.getOption("readonly") != null;
+        /** 2.初始化 ZooKeeper **/
         zk = new ZooKeeper(host,
                  Integer.parseInt(cl.getOption("timeout")),
                  new MyWatcher(), readOnly);
@@ -294,7 +295,7 @@ public class ZooKeeperMain {
     public ZooKeeperMain(String args[]) throws IOException, InterruptedException {
         cl.parseOptions(args);
         System.out.println("Connecting to " + cl.getOption("server"));
-        // 连接服务器，并且初始化zk
+        /** 1. 连接服务器，并且初始化zk **/
         connectToZK(cl.getOption("server"));
         //zk = new ZooKeeper(cl.getOption("server"),
 //                Integer.parseInt(cl.getOption("timeout")), new MyWatcher());
@@ -330,6 +331,7 @@ public class ZooKeeperMain {
                 String line;
                 Method readLine = consoleC.getMethod("readLine", String.class);
                 while ((line = (String)readLine.invoke(console, getPrompt())) != null) {
+                    /**14 在linux里面执行命令行的输入**/
                     executeLine(line);
                 }
             } catch (ClassNotFoundException e) {
@@ -369,7 +371,9 @@ public class ZooKeeperMain {
     throws InterruptedException, IOException, KeeperException {
       if (!line.equals("")) {
         cl.parseCommand(line);
+        //加到历史的命令里面去   命令就是： history
         addToHistory(commandCount,line);
+        /**15 处理命令的代码**/
         processCmd(cl);
         commandCount++;
       }
@@ -686,24 +690,25 @@ public class ZooKeeperMain {
             System.out.println("Not connected");
             return false;
         }
-        
+
+        //创建节点的 linux命令
         if (cmd.equals("create") && args.length >= 3) {
             int first = 0;
             // 构造CreateMode,从参数里面解析出节点类型
-            CreateMode flags = CreateMode.PERSISTENT;
+            CreateMode flags = CreateMode.PERSISTENT;//创建普通持久节点
             if ((args[1].equals("-e") && args[2].equals("-s"))
                     || (args[1]).equals("-s") && (args[2].equals("-e"))) {
                 first+=2;
-                flags = CreateMode.EPHEMERAL_SEQUENTIAL;
+                flags = CreateMode.EPHEMERAL_SEQUENTIAL;//创建顺序临时节点
             } else if (args[1].equals("-e")) {
                 first++;
-                flags = CreateMode.EPHEMERAL;
+                flags = CreateMode.EPHEMERAL;//创建临时的
             } else if (args[1].equals("-s")) {
                 first++;
-                flags = CreateMode.PERSISTENT_SEQUENTIAL;
+                flags = CreateMode.PERSISTENT_SEQUENTIAL;//创建顺序持久节点
             }
             if (args.length == first + 4) {
-                acl = parseACLs(args[first+3]);
+                acl = parseACLs(args[first+3]);//处理访问权限
             }
             path = args[first + 1];
             String newPath = zk.create(path, args[first+2].getBytes(), acl,

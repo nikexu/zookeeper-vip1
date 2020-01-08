@@ -445,14 +445,16 @@ public class ZooKeeper {
                 + " sessionTimeout=" + sessionTimeout + " watcher=" + watcher);
 
         watchManager.defaultWatcher = watcher;
-
+        /**3.包装连接地址**/
         ConnectStringParser connectStringParser = new ConnectStringParser(
                 connectString);
         HostProvider hostProvider = new StaticHostProvider(
                 connectStringParser.getServerAddresses());
+        /**4.客户端的连接上下文**/
         cnxn = new ClientCnxn(connectStringParser.getChrootPath(),
                 hostProvider, sessionTimeout, this, watchManager,
                 getClientCnxnSocket(), canBeReadOnly);
+        /**5.启动那俩个线程**/
         cnxn.start();
     }
 
@@ -778,17 +780,18 @@ public class ZooKeeper {
 
         final String serverPath = prependChroot(clientPath);
 
-        RequestHeader h = new RequestHeader();
+        RequestHeader h = new RequestHeader();//创建请求头对象
         h.setType(ZooDefs.OpCode.create);
-        CreateRequest request = new CreateRequest();
-        CreateResponse response = new CreateResponse();
-        request.setData(data);
-        request.setFlags(createMode.toFlag());
-        request.setPath(serverPath);
+        CreateRequest request = new CreateRequest();//创建一个 request 对象
+        CreateResponse response = new CreateResponse();//创建一个 response 对象
+        request.setData(data);//放入数据
+        request.setFlags(createMode.toFlag());//节点的类型
+        request.setPath(serverPath);//节点的路径
         if (acl != null && acl.size() == 0) {
             throw new KeeperException.InvalidACLException();
         }
-        request.setAcl(acl);
+        request.setAcl(acl);//acl 权限的参数
+        /**supreme NioClient 提交请求   进入方法内**/
         ReplyHeader r = cnxn.submitRequest(h, request, response, null);
         if (r.getErr() != 0) {
             throw KeeperException.create(KeeperException.Code.get(r.getErr()),
@@ -1841,10 +1844,11 @@ public class ZooKeeper {
     }
 
     private static ClientCnxnSocket getClientCnxnSocket() throws IOException {
-        //
+        //AIM 如果没有配这个系统的参数：  zookeeper.clientCnxnSocket
         String clientCnxnSocketName = System
                 .getProperty(ZOOKEEPER_CLIENT_CNXN_SOCKET);
         if (clientCnxnSocketName == null) {
+            //AIM 这边就会使用NIO作为IO模型进行 S/C之间连接通讯
             clientCnxnSocketName = ClientCnxnSocketNIO.class.getName();
         }
         try {
