@@ -132,7 +132,7 @@ public class PrepRequestProcessor extends ZooKeeperCriticalThread implements
                 if (Request.requestOfDeath == request) {
                     break;
                 }
-                // 往下
+                /**根据Request 类型去操作  supreme 进入方法内**/
                 pRequest(request);
             }
         } catch (RequestProcessorException e) {

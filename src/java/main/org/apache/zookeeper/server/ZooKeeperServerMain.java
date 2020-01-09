@@ -52,6 +52,7 @@ public class ZooKeeperServerMain {
     public static void main(String[] args) {
         ZooKeeperServerMain main = new ZooKeeperServerMain();
         try {
+            /**1 单机启动的核心方法 **/
             main.initializeAndRun(args);
         } catch (IllegalArgumentException e) {
             LOG.error("Invalid arguments, exiting abnormally", e);
@@ -79,13 +80,14 @@ public class ZooKeeperServerMain {
             LOG.warn("Unable to register log4j JMX control", e);
         }
 
+        /**2 解析读取配置文件**/
         ServerConfig config = new ServerConfig();
         if (args.length == 1) {
             config.parse(args[0]);
         } else {
             config.parse(args);
         }
-
+        /**3 真正去启动ZK的代码 supreme 进入方法内**/
         runFromConfig(config);
     }
 
@@ -102,6 +104,7 @@ public class ZooKeeperServerMain {
             // so rather than spawning another thread, we will just call
             // run() in this thread.
             // create a file logger url from the command line args
+            /**4 zk Server 主要核心类**/
             final ZooKeeperServer zkServer = new ZooKeeperServer();
             // Registers shutdown handler which will be used to know the
             // server error or shutdown state changes.
@@ -109,18 +112,21 @@ public class ZooKeeperServerMain {
             zkServer.registerServerShutdownHandler(
                     new ZooKeeperServerShutdownHandler(shutdownLatch));
 
+            /**5 读取日志的工具类**/
             txnLog = new FileTxnSnapLog(new File(config.dataLogDir), new File(
                     config.dataDir));
             txnLog.setServerStats(zkServer.serverStats());
+            /**6 初始化zkServer的属性**/
             zkServer.setTxnLogFactory(txnLog);
             zkServer.setTickTime(config.tickTime);
             zkServer.setMinSessionTimeout(config.minSessionTimeout);
             zkServer.setMaxSessionTimeout(config.maxSessionTimeout);
-            // 获取建立socket工厂，工厂方法模式
+            /**7 创建socket工厂，就是创建NIO连接方式的工厂，工厂方法模式  supreme 进入方法内 */
             cnxnFactory = ServerCnxnFactory.createFactory();
-            // 建立socket,默认是NIOServerCnxnFactory（是一个线程）
+            /**8 建立socket,默认是NIOServerCnxnFactory（是一个线程）配置这个工厂 supreme 进入方法内 */
             cnxnFactory.configure(config.getClientPortAddress(),
                     config.getMaxClientCnxns());
+            /**9 启动zkServer线程 supreme 进入方法内**/
             cnxnFactory.startup(zkServer);
             // Watch status of ZooKeeper server. It will do a graceful shutdown
             // if the server is not running or hits an internal error.

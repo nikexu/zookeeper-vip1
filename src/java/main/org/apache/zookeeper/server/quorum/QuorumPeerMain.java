@@ -60,7 +60,7 @@ import org.apache.zookeeper.server.quorum.QuorumPeerConfig.ConfigException;
  * </ol>
  * In addition to the config file. There is a file in the data directory called
  * "myid" that contains the server id as an ASCII decimal value.
- *
+ * supreme 这是服务端启动的入口
  */
 @InterfaceAudience.Public
 public class QuorumPeerMain {
@@ -81,6 +81,7 @@ public class QuorumPeerMain {
     public static void main(String[] args) {
         QuorumPeerMain main = new QuorumPeerMain();
         try {
+            /**1. 进入方法内**/
             main.initializeAndRun(args);
         } catch (IllegalArgumentException e) {
             LOG.error("Invalid arguments, exiting abnormally", e);
@@ -106,8 +107,10 @@ public class QuorumPeerMain {
     protected void initializeAndRun(String[] args)
         throws ConfigException, IOException
     {
+        /**2. 配置信息的包装类，就是zk的.cfg的那些配置文件**/
         QuorumPeerConfig config = new QuorumPeerConfig();
         if (args.length == 1) {
+            //通过io流把配置文件读进JVM内存里面
             config.parse(args[0]);
         }
 
@@ -119,13 +122,13 @@ public class QuorumPeerMain {
         purgeMgr.start();
 
         if (args.length == 1 && config.servers.size() > 0) {
-            // 集群模式
+            /** 集群模式**/
             runFromConfig(config);
         } else {
             LOG.warn("Either no config or no quorum defined in config, running "
                     + " in standalone mode");
             // there is only server in the quorum -- run as standalone
-            // 单机模式
+            /** 单机模式 **/
             ZooKeeperServerMain.main(args);
         }
     }

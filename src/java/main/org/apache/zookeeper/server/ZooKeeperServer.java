@@ -281,6 +281,7 @@ public class ZooKeeperServer implements SessionExpirer, ServerStats.Provider {
             setZxid(zkDb.getDataTreeLastProcessedZxid());
         }
         else {
+            //load 数据到 DataBase里面去
             setZxid(zkDb.loadDataBase());
         }
         
@@ -400,21 +401,26 @@ public class ZooKeeperServer implements SessionExpirer, ServerStats.Provider {
     public void startdata() 
     throws IOException, InterruptedException {
         //check to see if zkDb is not null
+        /**初始化 ZKDatabase**/
         if (zkDb == null) {
             zkDb = new ZKDatabase(this.txnLogFactory);
-        }  
+        }
+        /**如果 上次已经初始化过了 就去加载数据**/
         if (!zkDb.isInitialized()) {
+            /**加载数据 supreme 进入方法内**/
             loadData();
         }
     }
     
     public synchronized void startup() {
         if (sessionTracker == null) {
+            /**创建session 跟踪器 **/
             createSessionTracker();
         }
         startSessionTracker();
         // 这里比较重要，这里设置请求处理器，包括请求前置处理器，和请求后置处理器
         // 注意，集群模式下，learner服务端都对调用这个方法，但是比如FollowerZookeeperServer和ObserverZooKeeperServer都会重写这个方法
+        /**设置一个请求处理器  supreme 进入方法内**/
         setupRequestProcessors();
 
         registerJMX();
@@ -425,8 +431,7 @@ public class ZooKeeperServer implements SessionExpirer, ServerStats.Provider {
 
     protected void setupRequestProcessors() {
         RequestProcessor finalProcessor = new FinalRequestProcessor(this);
-        RequestProcessor syncProcessor = new SyncRequestProcessor(this,
-                finalProcessor);
+        RequestProcessor syncProcessor = new SyncRequestProcessor(this, finalProcessor);
         ((SyncRequestProcessor)syncProcessor).start();
         firstProcessor = new PrepRequestProcessor(this, syncProcessor);
         ((PrepRequestProcessor)firstProcessor).start();

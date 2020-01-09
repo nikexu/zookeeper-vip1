@@ -136,6 +136,7 @@ public class SyncRequestProcessor extends ZooKeeperCriticalThread implements Req
                 if (si == requestOfDeath) {
                     break;
                 }
+                /**如果存在要处理的请求命令**/
                 if (si != null) {
                     // track the number of records written to the log
                     // 先持久化日志！成功了才继续下面的操作
@@ -145,6 +146,7 @@ public class SyncRequestProcessor extends ZooKeeperCriticalThread implements Req
                         logCount++;
                         //如果logCount到了一定的量，zk运行过程中会不断地接受到请求，那么这个logCount就不会断的增加，
                         // 增加到一定的数据量之后，就会先生成一个快照，然后加入到待刷新到磁盘列表中去
+                        /**新启动一个线程去去打快照  **/
                         if (logCount > (snapCount / 2 + randRoll)) {
                             setRandRoll(r.nextInt(snapCount/2)); //下一次的随机数重新选
                             // roll the log
@@ -180,11 +182,12 @@ public class SyncRequestProcessor extends ZooKeeperCriticalThread implements Req
                         }
                         continue;
                     }
-                    // 待刷新到磁盘，
+                    /**先加入集合内   待刷新到磁盘， **/
                     toFlush.add(si);
-                    // 当请求数超过1000了就会刷新到磁盘
+                    // 当请求数超过1000了就会刷新到磁盘   有点像cow 写时复制的那种  先写到缓冲区  操作成功了 在写到磁盘上去
                     // flush方法里面也会调用nextProcessor，代表刷新到事务都持久化到磁盘之后，就调用下一个请求处理器
                     if (toFlush.size() > 1000) {
+                        /**刷到磁盘上的方法  supreme 进入方法内**/
                         flush(toFlush);
                     }
                 }
@@ -201,7 +204,7 @@ public class SyncRequestProcessor extends ZooKeeperCriticalThread implements Req
     {
         if (toFlush.isEmpty())
             return;
-
+        //提交事务刷新到 磁盘
         zks.getZKDatabase().commit();
         while (!toFlush.isEmpty()) {
             Request i = toFlush.remove();

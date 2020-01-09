@@ -94,11 +94,14 @@ public class NIOServerCnxnFactory extends ServerCnxnFactory implements Runnable 
         // 所以这里的这个线程是为了和JVM生命周期绑定，只剩下这个线程时已经没有意义了，应该关闭掉。
         thread.setDaemon(true);
         maxClientCnxns = maxcc;
+        /**打开一个serverSocketChannel 接受客户端发来的请求**/
         this.ss = ServerSocketChannel.open();
-        ss.socket().setReuseAddress(true);
+        ss.socket().setReuseAddress(true);//设置可实现端口复用
         LOG.info("binding to port " + addr);
+        /**建立连接**/
         ss.socket().bind(addr);
         ss.configureBlocking(false);
+        /**把ServerSocketChannel注册给Selector 作为一个监听事件**/
         ss.register(selector, SelectionKey.OP_ACCEPT);
     }
 
@@ -125,7 +128,9 @@ public class NIOServerCnxnFactory extends ServerCnxnFactory implements Runnable 
             InterruptedException {
         start();
         setZooKeeperServer(zks);
+        /**初始化 ZKDatabase supreme 进入方法内**/
         zks.startdata();
+        /**启动 supreme 进入方法内**/
         zks.startup();
     }
 
@@ -237,6 +242,7 @@ public class NIOServerCnxnFactory extends ServerCnxnFactory implements Runnable 
                     } else if ((k.readyOps() & (SelectionKey.OP_READ | SelectionKey.OP_WRITE)) != 0) {
                         // 接收数据,这里会间歇性的接收到客户端ping
                         NIOServerCnxn c = (NIOServerCnxn) k.attachment();
+                        /**操作的核心代码  supreme 进入方法内**/
                         c.doIO(k);
                     } else {
                         if (LOG.isDebugEnabled()) {

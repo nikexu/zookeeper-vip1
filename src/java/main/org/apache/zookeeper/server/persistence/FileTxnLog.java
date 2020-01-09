@@ -322,7 +322,7 @@ public class FileTxnLog implements TxnLog {
      */
     public synchronized void commit() throws IOException {
         if (logStream != null) {
-            logStream.flush();
+            logStream.flush();//存入磁盘中去
         }
         for (FileOutputStream log : streamsToFlush) {
             log.flush();

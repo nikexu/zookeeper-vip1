@@ -144,11 +144,12 @@ public class QuorumPeerConfig {
             Properties cfg = new Properties();
             FileInputStream in = new FileInputStream(configFile);
             try {
+                //字节流转化为 Properties 对象去封装配置信息
                 cfg.load(in);
             } finally {
                 in.close();
             }
-
+            /**3 解析读取配置文件**/
             parseProperties(cfg);
         } catch (IOException e) {
             throw new ConfigException("Error processing " + path, e);
@@ -396,6 +397,7 @@ public class QuorumPeerConfig {
                  */
 
                 LOG.info("Defaulting to majority quorums");
+                /**集群验证器，验证集群的过半机制**/
                 quorumVerifier = new QuorumMaj(servers.size()); // 目前这个servers不包括参与者，所以再算过半的时候不包括观察者
             }
 
@@ -416,6 +418,7 @@ public class QuorumPeerConfig {
                 br.close();
             }
             try {
+                //aim 所以我们配置的myId，就是serverId
                 serverId = Long.parseLong(myIdString);
                 MDC.put("myid", myIdString);
             } catch (NumberFormatException e) {

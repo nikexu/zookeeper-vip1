@@ -208,7 +208,7 @@ public class NIOServerCnxn extends ServerCnxn {
             if (!initialized) {
                 readConnectRequest();
             } else {
-                // 往下
+               /**如果连接成功就会走入这个方法  supreme 进入方法内**/
                 readRequest();
             }
             lenBuffer.clear();
@@ -264,7 +264,7 @@ public class NIOServerCnxn extends ServerCnxn {
                         isPayload = true;
                     }
                     if (isPayload) { // not the case for 4letterword
-                        // 读有效数据
+                        /**读有效数据  supreme 进入方法内**/
                         readPayload();
                     }
                     else {
