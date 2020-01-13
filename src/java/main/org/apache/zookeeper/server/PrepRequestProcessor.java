@@ -478,6 +478,7 @@ public class PrepRequestProcessor extends ZooKeeperCriticalThread implements
                 // queues up this operation without being the session owner.
                 // this request is the last of the session so it should be ok
                 //zks.sessionTracker.checkSession(request.sessionId, request.getOwner());
+                /**closeSession 就会删除临时节点**/
                 HashSet<String> es = zks.getZKDatabase()
                         .getEphemerals(request.sessionId);
                 synchronized (zks.outstandingChanges) {
@@ -640,6 +641,7 @@ public class PrepRequestProcessor extends ZooKeeperCriticalThread implements
             //create/close session don't require request record
             case OpCode.createSession:
             case OpCode.closeSession:
+                /**服务端接受客户端的关闭请求**/
                 pRequest2Txn(request.type, zks.getNextZxid(), request, null, true);
                 break;
  

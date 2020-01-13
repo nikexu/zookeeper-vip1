@@ -195,7 +195,7 @@ public class ZooKeeper {
             case NodeDataChanged:
             case NodeCreated:
                 synchronized (dataWatches) {
-                    // 这里负责移除
+                    /**supreme 这里负责移除 因为remove了 所以原生客户端 只能调用一次监听器 **/
                     addTo(dataWatches.remove(clientPath), result);
                 }
                 synchronized (existWatches) {
@@ -260,6 +260,7 @@ public class ZooKeeper {
                     Set<Watcher> watchers = watches.get(clientPath);
                     if (watchers == null) {
                         watchers = new HashSet<Watcher>();
+                        /**将注册器注册到map里面  key--客户端请求节点的路径  value--那个注册器s（可有多个）  **/
                         watches.put(clientPath, watchers);
                     }
                     watchers.add(watcher);
@@ -1219,8 +1220,17 @@ public class ZooKeeper {
         h.setType(ZooDefs.OpCode.getData);
         GetDataRequest request = new GetDataRequest();
         request.setPath(serverPath);
+        /** 告诉服务端 我设置了监听器 **/
         request.setWatch(watcher != null);
         GetDataResponse response = new GetDataResponse();
+        /**
+         * 提交请求  supreme 进入方法内
+         * wcb 这个watch 的包装类对于 Server 来说是没用的，但是为什么还是要封装进packet里面呢？
+         *
+         * 因为这个packet 在发送请求完成之后，还要放进 pendingQueue里面，
+         * 为了在得到服务端返回的结果以后更方便的处理这个回调的信息
+         *
+         **/
         ReplyHeader r = cnxn.submitRequest(h, request, response, wcb);
         if (r.getErr() != 0) {
             throw KeeperException.create(KeeperException.Code.get(r.getErr()),

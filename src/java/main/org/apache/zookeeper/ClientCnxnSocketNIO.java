@@ -386,12 +386,12 @@ public class ClientCnxnSocketNIO extends ClientCnxnSocket {
                 /** NIO是基于异步的一个连接  如果服务端已经处理完了连接事件，那么这边就会为true 就会进入if里面 **/
                 if (sc.finishConnect()) {
                     updateLastSendAndHeard();
-                    /**进入方法内  建立连接的核心方法**/
+                    /** 建立连接的核心方法 supreme 进入方法内**/
                     sendThread.primeConnection();
                 }
             //如果已经连接成功了，就可以做去做读写事件的监听了
             } else if ((k.readyOps() & (SelectionKey.OP_READ | SelectionKey.OP_WRITE)) != 0) { // 如果就绪的是读或者写事件
-                // 若读写就绪，调用doIO函数
+                /** 若读写就绪，调用doIO函数 supreme 进入方法内**/
                 doIO(pendingQueue, outgoingQueue, cnxn);
             }
         }

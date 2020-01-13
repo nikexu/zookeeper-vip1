@@ -511,7 +511,7 @@ public class ClientCnxn {
                  if (event == eventOfDeath) {
                     wasKilled = true;
                  } else {
-                     // 核心方法
+                     /**supreme 核心方法  这边就是走回调逻辑的方法 **/
                     processEvent(event);
                  }
                  if (wasKilled)
@@ -653,8 +653,10 @@ public class ClientCnxn {
        }
     }
 
-    private void finishPacket(Packet p) {
+    private void
+    finishPacket(Packet p) {
         if (p.watchRegistration != null) {
+            /***如果 watch这个属性不为空。就去注册这个事件 supreme 进入方法内*/
             p.watchRegistration.register(p.replyHeader.getErr());
         }
 
@@ -753,7 +755,8 @@ public class ClientCnxn {
             ReplyHeader replyHdr = new ReplyHeader();
 
             replyHdr.deserialize(bbia, "header");
-            if (replyHdr.getXid() == -2) {  // ping 的结果
+            /**ping 的结果  心跳机制**/
+            if (replyHdr.getXid() == -2) {
                 // -2 is the xid for pings
                 if (LOG.isDebugEnabled()) {
                     LOG.debug("Got ping response for sessionid: 0x"
@@ -764,7 +767,8 @@ public class ClientCnxn {
                 }
                 return;
             }
-            if (replyHdr.getXid() == -4) { // 认证结果
+            /**认证结果**/
+            if (replyHdr.getXid() == -4) {
                 // -4 is the xid for AuthPacket               
                 if(replyHdr.getErr() == KeeperException.Code.AUTHFAILED.intValue()) {
                     state = States.AUTH_FAILED;                    
@@ -777,7 +781,8 @@ public class ClientCnxn {
                 }
                 return;
             }
-            if (replyHdr.getXid() == -1) { // watch事件通知
+            /**watch事件通知**/
+            if (replyHdr.getXid() == -1) {
                 // -1 means notification
                 if (LOG.isDebugEnabled()) {
                     LOG.debug("Got notification sessionid:0x"
@@ -806,7 +811,7 @@ public class ClientCnxn {
                             + Long.toHexString(sessionId));
                 }
 
-                // 把通知事件加到waitingEvents
+                /**把通知事件加到waitingEvents supreme 进入方法内**/
                 eventThread.queueEvent( we );
                 return;
             }
@@ -865,7 +870,7 @@ public class ClientCnxn {
                             + Long.toHexString(sessionId) + ", packet:: " + packet);
                 }
             } finally {
-                // 处理packet
+                /**处理packet  supreme 进入方法内**/
                 finishPacket(packet);
             }
         }
@@ -1098,7 +1103,7 @@ public class ClientCnxn {
                             /**10.获取初始化时候的下一个地址 **/
                             serverAddress = hostProvider.next(1000);
                         }
-                        /**11.建立连接，socket建立成功后会调用SendThread.primeConnection() 进入方法内**/
+                        /**11.建立连接，socket建立成功后会调用SendThread.primeConnection() supreme 进入方法内**/
                         startConnect(serverAddress);//进行socket连接
                         clientCnxnSocket.updateLastSendAndHeard();
                     }
@@ -1430,6 +1435,7 @@ public class ClientCnxn {
         }
 
         try {
+            /**发送关闭session的操作的命令给服务端**/
             RequestHeader h = new RequestHeader();
             h.setType(ZooDefs.OpCode.closeSession);
 
